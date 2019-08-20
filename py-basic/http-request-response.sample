@@ -1,0 +1,28 @@
+GET / HTTP/1.1
+Host: localhost:65432
+User-Agent: Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Connection: keep-alive
+Upgrade-Insecure-Requests: 1
+
+================================================================================
+
+[rchung@localhost py-basic]$ nc google.com 80
+GET / HTTP/1.1
+
+HTTP/1.1 200 OK
+Date: Tue, 20 Aug 2019 12:08:04 GMT
+Expires: -1
+Cache-Control: private, max-age=0
+Content-Type: text/html; charset=ISO-8859-1
+P3P: CP="This is not a P3P policy! See g.co/p3phelp for more info."
+Server: gws
+X-XSS-Protection: 0
+X-Frame-Options: SAMEORIGIN
+Set-Cookie: 1P_JAR=2019-08-20-12; expires=Thu, 19-Sep-2019 12:08:04 GMT; path=/; domain=.google.com
+Set-Cookie: NID=188=ELUUcRBB75uAisN3ML1a2L9CLu2AHadMtt74YcuiBoU11lWJrqxdP1on8IV9M7lD-_5DRkwUcMNSAtvAqZDMycJI6peXMLwZBrVAvjDHnlE84F-5EP__lNi_A0uY_PUEapZz1WpkNOtIOta43t0EpZPjnahObe8v1copHh00f0o; expires=Wed, 19-Feb-2020 12:08:04 GMT; path=/; domain=.google.com; HttpOnly
+Accept-Ranges: none
+Vary: Accept-Encoding
+Transfer-Encoding: chunked
