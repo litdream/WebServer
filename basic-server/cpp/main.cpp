@@ -29,7 +29,7 @@ private:
 
         while (std::getline(ss, current_line)) {
             // Windows/HTTP uses \r\n, Unix uses \n. Let's handle both
-            if (current_line.back() == '\r') {
+            if (!current_line.empty() && current_line.back() == '\r') {
                 current_line.pop_back();
             }
             lines.push_back(current_line);
@@ -54,7 +54,7 @@ private:
         }
 
         // Body
-        if (i < lines.size()) {
+        if (i + 1 < lines.size()) {
             body = lines[i+1];
         }
     }
@@ -66,8 +66,9 @@ public:
     std::string body;
     std::map<std::string, std::string> headers;
 
-    HttpResponse(int code, const std::string& content) : status_code(code), body(content) {
-        headers["Content-Type"] = "text/html";
+    HttpResponse(int code, const std::string& content, const std::string& content_type = "text/html") 
+        : status_code(code), body(content) {
+        headers["Content-Type"] = content_type;
         headers["Content-Length"] = std::to_string(body.length());
     }
 
@@ -123,14 +124,22 @@ public:
 
         while (true) {
             int new_socket;
-            if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&address)) < 0) {
+            socklen_t addrlen = sizeof(address);
+            if ((new_socket = accept(server_fd, (struct sockaddr *)&address, &addrlen)) < 0) {
                 perror("accept");
                 exit(EXIT_FAILURE);
             }
 
             char buffer[1024] = {0};
-            read(new_socket, buffer, 1024);
-            HttpRequest request(buffer);
+            ssize_t bytes_read = read(new_socket, buffer, 1024);
+
+            if (bytes_read < 0) {
+                perror("read");
+                close(new_socket);
+                continue;
+            }
+
+            HttpRequest request(std::string(buffer, bytes_read));
 
             HttpResponse response = handle_request(request);
 
@@ -156,15 +165,33 @@ private:
         }
 
         std::string file_path = web_dir_ + path;
-        std::ifstream file(file_path);
+        std::string mime_type = get_mime_type(file_path);
+        
+        std::ifstream file(file_path, std::ios::binary);
 
         if (file.good()) {
             std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-            return HttpResponse(200, content);
-        }
-        else {
+            return HttpResponse(200, content, mime_type);
+        } else {
             return HttpResponse(404, "<h1>404 Not Found</h1>");
         }
+    }
+
+    std::string get_mime_type(const std::string& file_path) {
+        size_t dot_pos = file_path.rfind('.');
+        if (dot_pos == std::string::npos) {
+            return "application/octet-stream";
+        }
+
+        std::string ext = file_path.substr(dot_pos);
+        if (ext == ".html") return "text/html";
+        if (ext == ".css") return "text/css";
+        if (ext == ".js") return "application/javascript";
+        if (ext == ".jpg" || ext == ".jpeg") return "image/jpeg";
+        if (ext == ".png") return "image/png";
+        if (ext == ".ico") return "image/x-icon";
+        
+        return "application/octet-stream";
     }
 
     std::string host_;
@@ -173,7 +200,7 @@ private:
 };
 
 int main() {
-    HttpServer server("127.0.0.1", 8008, "../www");
+    HttpServer server("127.0.0.1", 8009, "../www");
     server.start();
     return 0;
 }
