@@ -26,6 +26,19 @@ class HTTPServer:
 
                     conn.sendall(response.to_bytes())
 
+    def get_mime_type(self, file_path):
+        ext = os.path.splitext(file_path)[1]
+        mime_types = {
+            '.html': 'text/html',
+            '.css': 'text/css',
+            '.js': 'application/javascript',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.ico': 'image/x-icon',
+        }
+        return mime_types.get(ext, 'application/octet-stream')
+
     def handle_get_request(self, request):
         path = request.path
         if path == '/':
@@ -34,11 +47,14 @@ class HTTPServer:
         file_path = os.path.join(self.web_dir, path.lstrip('/'))
 
         if os.path.exists(file_path) and os.path.isfile(file_path):
-            with open(file_path, 'r') as f:
+            mime_type = self.get_mime_type(file_path)
+            with open(file_path, 'rb') as f:
                 content = f.read()
-            return HTTPResponse(status_code=200, body=content)
+            
+            headers = {"Content-Type": mime_type}
+            return HTTPResponse(status_code=200, body=content, headers=headers)
         else:
-            return HTTPResponse(status_code=404, body="<h1>404 Not Found</h1>")
+            return HTTPResponse(status_code=404, body="<h1>404 Not Found</h1>".encode('utf-8'), headers={"Content-Type": "text/html"})
 
 
 class HTTPRequest:
@@ -81,7 +97,11 @@ class HTTPResponse:
         for key, value in self.headers.items():
             header_lines += f"{key}: {value}\r\n"
 
-        return f"{status_line}{header_lines}\r\n{self.body}".encode('utf-8')
+        response_headers = f"{status_line}{header_lines}\r\n".encode('utf-8')
+        
+        body_bytes = self.body if isinstance(self.body, bytes) else self.body.encode('utf-8')
+
+        return response_headers + body_bytes
 
     def _get_status_message(self):
         messages = {
